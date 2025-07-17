@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodetodo-deployment
+  labels:
+    app: nodetodo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nodetodo
+  template:
+    metadata:
+      labels:
+        app: nodetodo
+    spec:
+      containers:
+      - name: nodetodo
+        image: praveendhasgv/devsecops:nodetodo-28
+        ports:
+        - containerPort: 3000
+
