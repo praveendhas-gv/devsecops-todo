@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: nodetodo
-        image: praveendhasgv/devsecops:nodetodo-49
+        image: praveendhasgv/devsecops:nodetodo-53
         ports:
         - containerPort: 3000
 
