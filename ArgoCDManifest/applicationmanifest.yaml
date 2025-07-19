@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/praveendhas-gv/devsecops-todo.git
-    targetRevision: HEAD
+    targetRevision: main
     path: Manifests
   destination:
     server: https://kubernetes.default.svc
