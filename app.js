@@ -28,10 +28,18 @@ app.post('/delete', (req, res) => {
   res.redirect('/');
 });
 
-app.listen(port, () => {
-  console.log(`To-Do app running at http://localhost:${port}`);
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
 });
 
-app.get('/healthz', (req, res) => {
-    res.status(200).send('OK');
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`To-Do app running at http://localhost:${port}`);
   });
+} else {
+  module.exports = () => {
+    todos = []; // Reset todos between tests
+    return app;
+  };
+}
+
