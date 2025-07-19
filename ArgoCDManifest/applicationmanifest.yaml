@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nodetodo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/praveendhas-gv/devsecops-todo.git
+    targetRevision: HEAD
+    path: Manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nodeapp
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+    syncOptions:
+      - CreateNamespace=True
