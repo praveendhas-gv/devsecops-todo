@@ -1,0 +1,105 @@
+pipeline {
+    agent any
+    environment{
+        IMAGE_NAME="praveendhasgv/devsecops:nodetodo-${BUILD_ID}"
+        GIT_USER="Jenkins User"
+        GIT_EMAILID="praveendhas.gv@gmail.com"
+        GIT_PASS=credentials('Git_Token')
+    }
+    stages {
+        stage('Checkout') {
+            steps{
+                git branch: 'main', url: 'https://github.com/praveendhas-gv/devsecops-todo.git'
+                
+            }
+            }
+        stage('Dependency install') {
+            steps {
+                sh 'npm install'
+        }
+        }
+        stage('dependency check') {
+            steps{
+                sh 'npm audit --audit-level=critical'
+                
+            }
+            } 
+        stage("Testing "){
+            steps{
+            git branch: 'main', url: 'https://github.com/praveendhas-gv/devsecops-todo.git/'
+            sh 'npm install --save-dev jest-html-reporter' 
+            sh 'npm test'
+        }
+        }
+        stage('SonarQube analysis') {
+             steps {
+                 script {
+            scannerHome = tool 'SonarQubeScanner'
+            sonar_credential = credentials('Sonarqube_key')
+             }
+        withSonarQubeEnv('SonarQubeCloud') {
+          sh """
+          ${scannerHome}/bin/sonar-scanner \
+        -Dsonar.projectKey=praveendhas-gv_devsecops-todo \
+                        -Dsonar.organization=praveendhas-gv \
+                        -Dsonar.exclusions=**/*.yaml
+                        
+            """
+                        
+        }
+      }
+    }
+        stage('Image building') {
+               steps{
+                   script{
+                     IMAGE_NAME='praveendhasgv/devsecops:nodetodo-${BUILD_ID}'
+                   }
+                sh "docker build -t ${IMAGE_NAME} ."
+            }
+            }
+        stage('Pushing Docker Image'){
+            steps{
+                script{
+                    withDockerRegistry(credentialsId: 'DockerhubCred', url: 'https://index.docker.io/v1/') {
+                        sh "docker push ${IMAGE_NAME}"
+                        
+                    }
+                   
+               }
+            }
+        }
+        stage('Updating Kubernetes Manifest') {
+            steps{
+                sh """
+                cd Manifests
+                sed -i "s#praveendhasgv/devsecops:nodetodo.*#${IMAGE_NAME}#g" deployment.yaml
+                """
+            }
+        }
+        stage('Pushing manifest to repository'){
+            steps{
+                withCredentials([gitUsernamePassword(credentialsId: 'Github_Creds', gitToolName: 'Default')]) {
+    
+    sh """
+    git config --global user.name "${GIT_USER}"
+    """
+    sh """
+    git config --global user.email "${GIT_EMAILID}"
+    """
+    sh '''
+    git remote set-url origin git@github.com:praveendhas-gv/devsecops-todo.git
+    cd Manifests
+    git add deployment.yaml
+    git commit -m "Pushing updated kubernetes manifest from Jenkins Controller"
+    git push https://praveendhas.gv:$GIT_PASS@github.com/praveendhas-gv/devsecops-todo.git HEAD:main
+    '''
+}
+            }
+        }
+    }
+    post {
+        always {
+             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'test-results', reportFiles: 'test-report.html', reportName: 'HTML Report', reportTitles: 'Test Results', useWrapperFileDirectly: true])
+         }
+}
+}
